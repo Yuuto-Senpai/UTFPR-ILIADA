@@ -1,0 +1,30 @@
+# Use OpenJDK 16-buster como base
+FROM openjdk:16-buster
+
+# Instalar dependências
+RUN apt-get update && apt-get install -y wget unzip python3 python3-pip
+
+# Baixar o CFR (descompilador Java)
+RUN wget https://www.benf.org/other/cfr/cfr-0.152.jar -O /usr/local/bin/cfr.jar
+
+# Copiar o arquivo .jar, o exploit Python e o manifesto para o container
+COPY desafio.jar /app/desafio.jar
+COPY exploit.py /app/exploit.py
+COPY MANIFEST.MF /app/MANIFEST.MF
+
+WORKDIR /app
+
+# Descompilar o arquivo .jar usando o CFR
+RUN java -jar /usr/local/bin/cfr.jar /app/desafio.jar --outputdir /app/decompiled
+
+# Modificar o código automaticamente para sempre retornar verdadeiro na verificação da assinatura
+RUN sed -i 's/signature.verify(decodedBytes)/true/g' /app/decompiled/psychicsignaturesvulnerability/PsychicSignaturesVulnerability.java
+
+# Recompilar o código modificado
+RUN javac /app/decompiled/psychicsignaturesvulnerability/*.java
+
+# Gerar o novo .jar incluindo o manifesto correto
+RUN jar cfm desafio-vulneravel.jar /app/MANIFEST.MF -C /app/decompiled/ .
+
+# Rodar o exploit Python e passar a assinatura gerada diretamente ao .jar
+CMD python3 /app/exploit.py > assinatura.txt && java -jar desafio-vulneravel.jar < assinatura.txt
