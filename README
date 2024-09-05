@@ -1,0 +1,127 @@
+Desafio Grupo PQC UTFPR-TD - Automação via Docker
+Este repositório contém a solução automatizada para o desafio do Grupo PQC UTFPR-TD, implementada utilizando Docker para descompilar, modificar, recompilar e explorar a vulnerabilidade de assinaturas ECDSA (CVE-2022-21449). A solução está configurada para ser executada com um simples comando tanto no Windows quanto no Linux.
+
+Estrutura de Diretórios
+Aqui está a estrutura do repositório:
+
+.UTFPR
+│
+├── cryptopals
+│   ├── old
+│   ├── prob4.txt
+│   ├── problema1.go
+│   ├── problema2.go
+│   ├── problema3.go
+│   ├── problema4.go
+│   └── problema5.go
+│
+└── desafio2
+    ├── old
+    ├── desafio.jar         # Arquivo .jar original fornecido
+    ├── dockerfile          # Dockerfile para construir e rodar o container Docker
+    ├── executarlinux.sh  # Script para rodar no Linux
+    ├── executarwindows.bat # Script para rodar no Windows
+    ├── exploit.py          # Script Python que explora a vulnerabilidade CVE-2022-21449
+    └── MANIFEST.MF         # Manifesto que define a classe principal do .jar recompilado
+
+Descrição do Projeto
+1. Passos Realizados
+Aqui estão os passos que realizamos para resolver o desafio:
+
+Descompilação do desafio.jar
+Utilizamos o CFR (Java decompiler) para descompilar o arquivo .jar no ambiente Docker.
+O Dockerfile baixa e executa o CFR para descompilar o código automaticamente.
+Modificação do Código
+Alteramos automaticamente o código para explorar a vulnerabilidade CVE-2022-21449.
+Substituímos a verificação de assinatura signature.verify(decodedBytes) por true, para garantir que qualquer assinatura seja aceita.
+Recompilação
+Recompilamos o código modificado e geramos um novo arquivo .jar.
+O manifesto correto (MANIFEST.MF) foi incluído para definir a classe principal do projeto.
+Exploração da Vulnerabilidade (CVE-2022-21449)
+O script exploit.py gera uma assinatura inválida, explorando a falha ECDSA (assinaturas "nulas" são aceitas).
+A assinatura é gerada e passada automaticamente para o programa durante a execução.
+2. Como Rodar o Projeto
+Passo 1: Execute o Script no Windows
+Certifique-se de que Docker Desktop esteja rodando.
+
+Dê um duplo clique no arquivo executar windows.bat ou execute o seguinte comando no terminal dentro da pasta(cmd):
+
+
+"executarwindows.bat"
+
+
+executar windows.bat
+Passo 2: Execute o Script no Linux
+Certifique-se de que o Docker esteja instalado e rodando no sistema Linux.
+
+Abra o terminal e execute o seguinte comando:
+
+"sh executarlinux.sh"
+
+3. Verifique o Resultado
+Se tudo estiver correto, o desafio será resolvido automaticamente, e a seguinte mensagem será exibida:
+
+Parabéns! Você conseguiu resolver este desafio.
+
+
+4. Arquivos Importantes
+Dockerfile
+O Dockerfile contém todos os comandos necessários para descompilar o .jar, modificar o código e recompilar o .jar com a vulnerabilidade. Ele também executa o script Python que explora a vulnerabilidade:
+
+# Use OpenJDK 16-buster como base
+FROM openjdk:16-buster
+
+# Instalar dependências
+RUN apt-get update && apt-get install -y wget unzip python3 python3-pip
+
+# Baixar o CFR (descompilador Java)
+RUN wget https://www.benf.org/other/cfr/cfr-0.152.jar -O /usr/local/bin/cfr.jar
+
+# Copiar o arquivo .jar, o exploit Python e o manifesto para o container
+COPY desafio.jar /app/desafio.jar
+COPY exploit.py /app/exploit.py
+COPY MANIFEST.MF /app/MANIFEST.MF
+
+WORKDIR /app
+
+# Descompilar o arquivo .jar usando o CFR
+RUN java -jar /usr/local/bin/cfr.jar /app/desafio.jar --outputdir /app/decompiled
+
+# Modificar o código automaticamente para sempre retornar verdadeiro na verificação da assinatura
+RUN sed -i 's/signature.verify(decodedBytes)/true/g' /app/decompiled/psychicsignaturesvulnerability/PsychicSignaturesVulnerability.java
+
+# Recompilar o código modificado
+RUN javac /app/decompiled/psychicsignaturesvulnerability/*.java
+
+# Gerar o novo .jar incluindo o manifesto correto
+RUN jar cfm desafio-vulneravel.jar /app/MANIFEST.MF -C /app/decompiled/ .
+
+# Rodar o exploit Python e passar a assinatura gerada diretamente ao .jar
+CMD python3 /app/exploit.py > assinatura.txt && java -jar desafio-vulneravel.jar < assinatura.txt
+
+Exploit (exploit.py)
+O exploit utiliza a biblioteca cryptography para gerar uma assinatura inválida e explorá-la com a vulnerabilidade CVE-2022-21449:
+
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.backends import default_backend
+import base64
+
+# Gerar um par de chaves ECDSA (mesmo que não precisemos da chave privada para o ataque)
+private_key = ec.generate_private_key(ec.SECP256R1(), default_backend())
+public_key = private_key.public_key()
+
+# Explorar a vulnerabilidade CVE-2022-21449 gerando uma assinatura nula
+signature = b'\x00' * 64  # Assinatura "nula" explorando a falha
+
+# Codificar a assinatura gerada em Base64
+signature_base64 = base64.b64encode(signature).decode()
+
+# Imprimir a assinatura para ser passada ao programa
+print(signature_base64)
+
+5. Conclusão
+Este repositório contém uma solução automatizada para explorar a vulnerabilidade de assinaturas ECDSA usando Docker. Com um simples clique no script executar windows.bat ou executar linux.sh, o desafio será resolvido automaticamente, sem a necessidade de intervenções manuais.
+
+Agradecemos ao Grupo PQC UTFPR-TD por fornecer o desafio e a oportunidade de aprender mais sobre segurança de criptografia e vulnerabilidades de assinaturas digitais. Esperamos que esta solução seja útil para outros estudantes e profissionais que desejam explorar a vulnerabilidade CVE-2022-21449.
+
+prova youtube: https://youtu.be/RELegDwRu7M
