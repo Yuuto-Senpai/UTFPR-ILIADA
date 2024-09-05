@@ -1,3 +1,7 @@
+Nome: GABRIEL HENRIQUE MOREIRA DE SOUZA BUENO
+RA: 2719568 
+Nome no  GitHub: Yuuto-Senpai
+
 Desafio Grupo PQC UTFPR-TD - Automação via Docker
 Este repositório contém a solução automatizada para o desafio do Grupo PQC UTFPR-TD, implementada utilizando Docker para descompilar, modificar, recompilar e explorar a vulnerabilidade de assinaturas ECDSA (CVE-2022-21449). A solução está configurada para ser executada com um simples comando tanto no Windows quanto no Linux.
 
